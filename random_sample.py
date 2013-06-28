@@ -13,44 +13,64 @@ from numpy import ones, ravel, sqrt, arccos, cos, sin
 from collections import deque
 import matplotlib.pyplot as plt
 
-# input:
-gaussians = [                                \
-            [[3, 3] , [0.5, 0.25] ,     0e0],   \
-            [[7, 5] , [1, 0.25] , 3e0*pi/4e0],   \
-            [[3, 8] , [1, 0.25] ,     pi/4e0]    \
-            ]
-
 # Random points from multivariate gaussian distributions:
+N = 1000
+M = 100
 
-x_sample = deque()
-y_sample = deque()
-theta_zero = ones(500)
+def simul_gauss(GN=20):
+   # simulate the gaussians:
 
-for m, d, theta in gaussians:
-    x = rd.normal(m[0], d[0], 500)
-    y = rd.normal(m[1], d[1], 500)
-
-    if theta != 0e0:
-       vecl = sqrt((x - m[0])**2 + (y - m[1])**2)
-       theta_zero[x < m[0]] = 2e0*pi - arccos((x - m[0])/vecl)
-       theta_zero[x >= m[0]] = arccos((x - m[0])/vecl)
-       theta = theta + theta_zero
-
-       x_sample.append( vecl * cos(theta) + m[0])
-       y_sample.append( vecl * sin(theta) + m[1])
+   gaussians = deque()
+   for i in xrange(GN):
+       x = rd.randint(1, M-1)
+       y = rd.randint(1, M-1)
+    
+       dx = sqrt(M) * rd.ranf()
+       dy = sqrt(M) * rd.ranf()
        
-    else:
-       x_sample.append(x)
-       y_sample.append(y)
+       align = 0e0 #pi * rd.ranf() 
+       
+       gaussians.append([[x, y], [dx, dy], align])
+
+   return gaussians
+
+def simul(gaussians):
+   x_sample = deque()
+   y_sample = deque()
+   theta_zero = ones(N)
+
+   for m, d, theta in gaussians:
+       print(m, d, theta)
+       x = rd.normal(m[0], d[0], N)
+       y = rd.normal(m[1], d[1], N)
+
+       if theta != 0e0:
+          print(theta_zero[x < m[0]].shape, theta_zero[x >= m[0]].shape)
+          vecl = sqrt((x - m[0])**2 + (y - m[1])**2)
+          theta_zero[x < m[0]]  = 2e0*pi - arccos((x - m[0])/vecl)[x < m[0]]
+          theta_zero[x >= m[0]] = arccos((x - m[0])/vecl)[x >= m[0]]
+          theta = theta + theta_zero
+
+          x_sample.append( vecl * cos(theta) + m[0])
+          y_sample.append( vecl * sin(theta) + m[1])
+       
+       else:
+          x_sample.append(x)
+          y_sample.append(y)
 
 
-# random points adding noise.
-x_sample.append( 10 * rd.rand(500) )
-y_sample.append( 10 * rd.rand(500) )
+   # random points adding noise.
+   x_sample.append( M * rd.rand(N) )
+   y_sample.append( M * rd.rand(N) )
 
-# Change array format:
-x_sample = ravel(x_sample)
-y_sample = ravel(y_sample)
+   # Change array format:
+   x_sample = ravel(x_sample)
+   y_sample = ravel(y_sample)
+   
+   return x_sample, y_sample
 
-plt.plot(x_sample,y_sample,"b.")
+gauss = simul_gauss()
+x, y = simul(gauss)
+
+plt.plot(x, y, "k.")
 plt.show()
