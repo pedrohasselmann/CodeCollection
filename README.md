@@ -1,4 +1,4 @@
-AsteroidCodeCollection
-======================
+Code Collection
+==============
 
-A mixed collection of asteroid coded in Python and Fortran.
+A mixed collection of astronomy code in Python and Fortran.
