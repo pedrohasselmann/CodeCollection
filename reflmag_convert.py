@@ -77,12 +77,12 @@ def SDSS_refl(mag, mag_err, sunmag, sunmag_err,norm):
     refl     =  2e0*b*sinh(c*mag - log(b))/refl_sun
 
 
-    refl_err_sun =  fabs( c*refl*sunmag_err/ tanh(c*sunmag - log(b)) )
+    refl_err_sun =  fabs( c*refl_sun*sunmag_err/ tanh(c*sunmag - log(b)) )
     refl_err     =  fabs( c*refl*mag_err/ tanh(c*mag - log(b)) )
 
     err = sqrt((refl_err/refl)**2 + (refl_err_sun/refl_sun)**2)
     
-    return refl/refl[1], err
+    return refl/refl[norm], err
 
 
         

@@ -24,7 +24,7 @@ def SDSS_refl(mag, mag_err, sunmag, sunmag_err,norm):
 
     err = sqrt((refl_err/refl)**2 + (refl_err_sun/refl_sun)**2)
     
-    return refl/refl[1], err
+    return refl/refl[norm], err
 
 home = path.expanduser("~")
 
