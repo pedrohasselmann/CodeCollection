@@ -32,13 +32,12 @@ def refl_pogson(mag,mag_err,norm):
      The input must be a list. And [norm] is a integer number, locating where is 
      normalization band in the list.'''
     
-    refl1 = list(10.0**(0.4*((mag[norm] - mag[:norm]) - (sunmag[norm] - sunmag[:norm]))))
-    refl2 = list(10.0**(-0.4*((mag[norm] - mag[norm:]) - (sunmag[norm] - sunmag[norm:]))))
+    refl1 = 10.0**(0.4*((mag - mag[norm]) - (sunmag - sunmag[norm])))
 
     error=sqrt(mag_err**2 + mag_err[norm]**2 + sunmag_err[norm]**2 + sunmag_err**2)
     refl_err = (0.9210*error*(1.000 + 0.4605*error))
 
-    return array(refl1+refl2), refl_err
+    return refl/refl[norm], refl_err
 
 #___________________Log Reflectance (Carvano et al. 2010)_________________________________
 def log_refl(mag,mag_err,sunmag,sunmag_err,norm,norm_value=1e0):
