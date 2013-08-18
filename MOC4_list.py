@@ -37,6 +37,11 @@ with zipfile.ZipFile(path.join(home,"Dados","Catalogos","ADR4_ident_filtered.zip
      
 output=open('ADR4_refl+mags2.dat', 'w').write
 
+#STATIONARY, 
+# TOO_FEW_GOOD_DETECTIONS, BAD_MOVING_FIT, BAD_MOVING_FIT_CHILD,
+# EDGE, NOTCHECKED, BINNED2, BINNED4, NODEBLEND, MAYBE_CR,
+# DEBLEND_DEGENERATE, PEAKS_TOO_CLOSE
+
 bad_flags = [5, 6, 13, 20, 25, 26, 33, 34, 36, 40, 46, 55]
 
 for obs_moc4 in MOC4:
