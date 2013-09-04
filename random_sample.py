@@ -11,13 +11,12 @@ from math import pi
 from numpy import random as rd
 from numpy import ones, ravel, sqrt, arccos, cos, sin
 from collections import deque
-import matplotlib.pyplot as plt
 
 # Random points from multivariate gaussian distributions:
 N = 1000
 M = 100
 
-def simul_gauss(GN=20):
+def simul_gauss(x_sample, y_sample, GN=20):
    # simulate the gaussians:
 
    gaussians = deque()
@@ -32,13 +31,8 @@ def simul_gauss(GN=20):
        
        gaussians.append([[x, y], [dx, dy], align])
 
-   return gaussians
-
-def simul(gaussians):
-   x_sample = deque()
-   y_sample = deque()
    theta_zero = ones(N)
-
+       
    for m, d, theta in gaussians:
        print(m, d, theta)
        x = rd.normal(m[0], d[0], N)
@@ -58,6 +52,9 @@ def simul(gaussians):
           x_sample.append(x)
           y_sample.append(y)
 
+   return x_sample, y_sample
+          
+def simul_noise(x_sample, y_sample):
 
    # random points adding noise.
    x_sample.append( M * rd.rand(N) )
@@ -69,8 +66,14 @@ def simul(gaussians):
    
    return x_sample, y_sample
 
-gauss = simul_gauss()
-x, y = simul(gauss)
+##### EDIT HERE #####
 
-plt.plot(x, y, "k.")
-plt.show()
+if __name__ == "__main__":
+  import matplotlib.pyplot as plt
+  
+  x, y = deque(), deque()
+  x, y = simul_gauss(x, y)
+  x, y = simul_noise(x, y)
+
+  plt.plot(x, y, "k.")
+  plt.show()
