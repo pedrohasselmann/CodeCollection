@@ -8,10 +8,24 @@
 from __future__ import print_function, unicode_literals, absolute_import, division
 
 from os import path, makedirs
+import platform
 import cPickle as pkl
 
 home = path.expanduser("~")
 #path.join(home,"Catalogues","RelabDB2012Dec.zip")
+
+def pickle(query):
+   
+   output = open("bus_templates.pkl",'wb')   
+   pkl.dump(query,output, 2)
+   output.close()
+
+def unpickle(filename="bus_templates.pkl"):  
+
+   inputed = open(filename,'rb')  
+   rec = pkl.load(inputed)   
+   inputed.close()   
+   return rec
 
 class Relab:
 
@@ -56,13 +70,15 @@ class Relab:
      #makedirs(filename[0:-4].replace("/","\ "))
          
      if extract: self.db.extract(filename, '.')
+     if platform.system() == "win32": filename = filename.replace("/","\\")
      
-     loadexcel = excel.open_workbook(filename.replace("/","\\"), on_demand=True)
+     
+     loadexcel = excel.open_workbook(filename, on_demand=True)
      #sheet = loadexcel.sheet_by_name(loadexcel.sheet_names()[0])
      #print(sheet.ncols, sheet.nrows)
 
      f = pd.read_excel(
-                       filename.replace("/","\\"), 
+                       filename, 
                        loadexcel.sheet_names()[0], 
                        header=0,
                        index_col=indexid,
@@ -71,17 +87,39 @@ class Relab:
      return f
      
   def retrieve_spectra(self, samplename, spectraname):
+     ''' Retrieve the spectrum of a given sample lost among RELAB files.'''
+
+     from itertools import izip
     
-     link = samplename.split("-")
+     for samp, spec in izip(samplename, spectraname):
+       link = samp.split("-")
+       print(samp, spec)
      
-     sampleloc = '/'.join(["data",link[-2],link[-3],spectraname])
+       sampleloc = '/'.join(["data",
+                             link[1].lower(),
+                             link[0].lower(),
+                             spec.lower()+".txt"
+                             ])
+       try:
+          openloc = self.db.open(sampleloc, 'r')
+       except KeyError:
+          yield None
+          
+       yield openloc
+
+  def read_spectra(self, pointer):
+     from numpy import loadtxt
      
-     return self.db.open(sampleloc, 'r')
+     return loadtxt(pointer, unpack=True, dtype=float, usecols=[0,1], skiprows=2)
 
   def merging(self, cat1, cat2, **kwargs):
 
      return pd.merge(cat1, cat2, **kwargs)
 
+  def plot(self, wv, refl):
+     
+     import matplotlib.pyplot as plt
+     return 
 
 if __name__ == '__main__':
   relab = Relab()
@@ -91,10 +129,32 @@ if __name__ == '__main__':
   spectracat = relab.dataframe(cat["Spectra_Catalogue"], extract=False)
   allcat = relab.merging(samplecat, spectracat, left_index=True, right_index=True)
   del samplecat, spectracat
-  print(allcat.columns)
+  #print(allcat.columns)
   meteorites = allcat[allcat["GeneralType"] == 'Meteorite']
-  meteoritesVNIR = meteorites[meteorites["SpecCode"] == 'DHC-VNIR']
+  meteoritesVNIR = meteorites[meteorites["SpecCode"] == 'BD-VNIR']
   
-  spectrapaths = relab.retrieve_spectra(meteoritesVNIR.index, meteoritesVNIR.RelabFile)
+  spectra_loc = relab.retrieve_spectra(meteoritesVNIR.index, meteoritesVNIR.RelabFile)
+  
+  import spectools
+  from numpy import loadtxt
+  
+  specphot = list()
+  for spec in spectra_loc:
+     if spec:
+       specfit = spectools.Spectro(*relab.read_spectra(spec), norm=None)
+     
+       specphot.append([])     
+     
+       for band in  ['u','g','r','i','z']:
+          bandpass = loadtxt(
+                             path.join(home,"My Projects","SDSSMOC", "lists", band+"_sensitivity.dat"), 
+                             unpack=True, 
+                             usecols=[0,1], 
+                            skiprows=5
+                            )
+          specphot[-1].append(specfit.converter(*bandpass))
+       if len(filter(lambda x: x==None, specphot[-1])) == 5: print(specphot[-1])
+     
+     
 
 # END

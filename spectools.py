@@ -13,31 +13,23 @@ import cPickle as pkl
 
 home = path.expanduser("~")
 
-def pickle(query):
-   
-    output = open("bus_templates.pkl",'wb')   
-    pkl.dump(query,output, 2)
-    output.close()
-
-def unpickle(filename="bus_templates.pkl"):  
-
-    inputed = open(filename,'rb')  
-    rec = pkl.load(inputed)   
-    inputed.close()   
-    return rec
-
 def ajust(wv, 
           refl, 
-          par, 
-          coefs=None, 
-          norm
+          par,
+          norm = None,
+          coefs= None, 
           ):
 
     from numpy import polyval, polyfit
 
     poly_coefs = polyfit(wv, refl, deg=par)
     if coefs ==  None: coefs = poly_coefs
-    spectra = lambda x : polyval(poly_coefs, x)/polyval(coefs,norm)
+        
+    if norm: 
+      spectra = lambda x : polyval(poly_coefs, x)/polyval(coefs,norm)
+    else:
+      spectra = lambda x : polyval(poly_coefs, x)
+      
     return spectra, poly_coefs
 
 class Spectro:
@@ -55,51 +47,59 @@ class Spectro:
 
     from scipy.interpolate import UnivariateSpline as spline
     
-    if wv == None: wv = arange(*step)
+    if wv == None: 
+      wv = arange(*step)
+      self.step = step
+    else:
+      self.step = (wv[0],wv[-1], wv[0]-wv[1])
 
     # Fit a polynomial over the spectra:
     self.fit, coef = ajust(wv, refl, par, norm=norm)
-    self.std = spline(wv, error, s=s)
+    if error != None: self.std = spline(wv, error, s=s)
     
     self.step = step
     
 
-  def __iter__(self,
-               bandpass, 
-               ):
+  def converter(self,
+                wv_band,
+                sens,
+                ):
 
    ''' Calibrated continuum spectra converted to a discreet photometric system. '''
 
    from scipy import integrate as intg
    from numpy import loadtxt
    
+   wv_band = 1e-4*wv_band
 
    # Convolution of the spectra with each bandpass (sensitivity):
-
-   wv_band, sens = *bandpass
 
    if wv_band[0] > self.step[0] and wv_band[-1] < self.step[1]: # Criteria to check either filters are inside the spectral region or not.
 
      # Integral of sensitivity
-     wv_band = 1e-4*wv_band
      band_integral = intg.simps(y=sens[:len(wv_band)],x=wv_band)
 
      # Filter convolution
      conv_profile = self.fit(wv_band)*sens
-     conv_spread  = self.std(wv_band)*sens
+     if getattr(self, 'std', None): 
+       conv_spread  = self.std(wv_band)*sens
      
    else:
      return
 
    # Calculate Reflectance:
    refl_band = intg.simps(y=conv_profile,x=wv_band)/band_integral
-   std_band = intg.simps(y=conv_spread,x=wv_band)/band_integral               
-
-   return refl_band, std_band
+   
+   if getattr(self, 'std', None): 
+     std_band = intg.simps(y=conv_spread,x=wv_band)/band_integral               
+     return refl_band, std_band
+     
+   else:
+     return refl_band
 
 
 if __name__ == "__main__":
-  spectro = Spectro()
+  pass
 
 # END
   
