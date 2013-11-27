@@ -57,8 +57,6 @@ class Spectro:
     self.fit, coef = ajust(wv, refl, par, norm=norm)
     if error != None: self.std = spline(wv, error, s=s)
     
-    self.step = step
-    
 
   def converter(self,
                 wv_band,
@@ -68,24 +66,23 @@ class Spectro:
    ''' Calibrated continuum spectra converted to a discreet photometric system. '''
 
    from scipy import integrate as intg
-   from numpy import loadtxt
+   from numpy import argmin, fabs
    
    wv_band = 1e-4*wv_band
 
+   low, up = 0,  len(wv_band)
+   if self.step[0] > wv_band[0]:  low = argmin(fabs(wv_band - self.step[0]))
+   if self.step[1] > wv_band[-1]:  up = argmin(fabs(wv_band - self.step[1]))
+
    # Convolution of the spectra with each bandpass (sensitivity):
+   sens, wv_band = sens[low:up], wv_band[low:up]
+   # Integral of sensitivity
+   band_integral = intg.simps(y=sens,x=wv_band)
 
-   if wv_band[0] > self.step[0] and wv_band[-1] < self.step[1]: # Criteria to check either filters are inside the spectral region or not.
-
-     # Integral of sensitivity
-     band_integral = intg.simps(y=sens[:len(wv_band)],x=wv_band)
-
-     # Filter convolution
-     conv_profile = self.fit(wv_band)*sens
-     if getattr(self, 'std', None): 
-       conv_spread  = self.std(wv_band)*sens
-     
-   else:
-     return
+   # Filter convolution
+   conv_profile = self.fit(wv_band)*sens
+   if getattr(self, 'std', None): 
+     conv_spread  = self.std(wv_band)*sens
 
    # Calculate Reflectance:
    refl_band = intg.simps(y=conv_profile,x=wv_band)/band_integral

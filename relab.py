@@ -87,7 +87,7 @@ class Relab:
      return f
      
   def retrieve_spectra(self, samplename, spectraname):
-     ''' Retrieve the spectrum of a given sample lost among RELAB files.'''
+     ''' Yield the spectrum location of a given sample lost among RELAB files.'''
 
      from itertools import izip
     
@@ -102,10 +102,9 @@ class Relab:
                              ])
        try:
           openloc = self.db.open(sampleloc, 'r')
+          yield openloc
        except KeyError:
           yield None
-          
-       yield openloc
 
   def read_spectra(self, pointer):
      from numpy import loadtxt
@@ -131,29 +130,33 @@ if __name__ == '__main__':
   del samplecat, spectracat
   #print(allcat.columns)
   meteorites = allcat[allcat["GeneralType"] == 'Meteorite']
-  meteoritesVNIR = meteorites[meteorites["SpecCode"] == 'BD-VNIR']
+  meteoritesVNIR = meteorites[meteorites["SpecCode"] == 'DHC-VNIR']
   
   spectra_loc = relab.retrieve_spectra(meteoritesVNIR.index, meteoritesVNIR.RelabFile)
   
   import spectools
   from numpy import loadtxt
+  from itertools import izip
   
-  specphot = list()
-  for spec in spectra_loc:
-     if spec:
+  bandpasses = [loadtxt(
+                        path.join(home,"My Projects","SDSSMOC", "lists", band+"_sensitivity.dat"), 
+                        unpack=True, 
+                        usecols=[0,1], 
+                        skiprows=5
+                        ) 
+                        for band in ['u','g','r','i','z']
+                ]  
+  
+  specphot = dict()
+  for spec, index in izip(spectra_loc, meteoritesVNIR.index):
+     if spec != None:
        specfit = spectools.Spectro(*relab.read_spectra(spec), norm=None)
      
-       specphot.append([])     
-     
-       for band in  ['u','g','r','i','z']:
-          bandpass = loadtxt(
-                             path.join(home,"My Projects","SDSSMOC", "lists", band+"_sensitivity.dat"), 
-                             unpack=True, 
-                             usecols=[0,1], 
-                            skiprows=5
-                            )
-          specphot[-1].append(specfit.converter(*bandpass))
-       if len(filter(lambda x: x==None, specphot[-1])) == 5: print(specphot[-1])
+       refl = list()
+       for band in bandpasses:
+          refl.append(specfit.converter(*band))
+
+       specphot[index] = refl
      
      
 
